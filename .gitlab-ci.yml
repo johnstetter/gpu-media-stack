@@ -1,0 +1,27 @@
+stages:
+  - validate
+  - lint
+  - deploy
+
+validate:
+  stage: validate
+  script:
+    - docker-compose -f compose.yml config
+
+lint:
+  stage: lint
+  script:
+    - docker-compose-linter compose.yml
+
+deploy:
+  stage: deploy
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker-compose -f compose.yml up -d
+  tags:
+    - gpu
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG
