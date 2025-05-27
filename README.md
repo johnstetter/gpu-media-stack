@@ -60,8 +60,8 @@ Welcome to the **GPU-AI-Stack**, an integrated containerized AI system that comb
 ### 1. Clone
 
 ```bash
-git clone https://gitlab.com/stetter-homelab/your-stack-repo.git
-cd your-stack-repo
+git clone https://gitlab.com/stetter-homelab/gpu-ai-stack.git
+cd gpu-ai-stasck
 ```
 
 ### 2. Create `.env`
@@ -128,7 +128,7 @@ docker compose up -d
 
 ---
 
-## 🔍 Usage Tips
+## 🔍 Usage Tips (WIP!)
 
 - Access chat UI at: [http://localhost:8080](http://localhost:8080)
 - Submit Proxmox control prompts like:
