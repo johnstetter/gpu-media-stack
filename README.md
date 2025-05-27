@@ -1,83 +1,109 @@
+# 🧠 GPU-AI-Stack: Local AI Chat, Generation, and Proxmox Control Suite
 
-# 🧠 GPU AI Stack
+Welcome to the **GPU-AI-Stack**, an integrated containerized AI system that combines local LLMs, multimodal generation, and infrastructure control for your homelab or research environment. This stack stitches together:
 
-[![Build Status](https://gitlab.com/stetter-mcp/gpu-ai-stack/badges/main/pipeline.svg)](https://gitlab.com/stetter-mcp/gpu-ai-stack/-/pipelines)
-[![Docker Registry](https://img.shields.io/badge/registry-gitlab-blue)](https://gitlab.com/stetter-mcp)
-[![GPU Enabled](https://img.shields.io/badge/GPU-NVIDIA-green)](https://docs.nvidia.com/datacenter/cloud-native/index.html)
-
-A modular, GPU-accelerated, self-hosted AI stack for local LLMs, image generation, whisper-based transcription, translation, and LangChain-driven automations — with Proxmox integration and a fully containerized interface.
-
----
-
-## 🧰 Stack Components
-
-| Service               | Description |
-|----------------------|-------------|
-| 🧠 **Ollama**        | Local LLMs like LLaMA/Code Llama |
-| 💬 **Open WebUI**    | Web chat interface with RAG + tool use |
-| 🔍 **SearxNG**        | Privacy-focused metasearch for RAG queries |
-| 🎨 **ComfyUI**        | Stable Diffusion image generation |
-| 🌍 **LibreTranslate** | GPU-accelerated language translation |
-| 🎙️ **Whishper**      | Audio transcription and translation |
-| 🧮 **MongoDB**        | Database for Whisper |
-| ⚡ **Redis**          | Caching for LangChain + agents |
-| 🤖 **agent-proxmox** | LangChain chatbot agent backend |
-| 🧰 **mcp-proxmox**   | Proxmox API integration service |
+- **LangChain-powered Proxmox agent (`agent-proxmox`)**
+- **MCP control server (`mcp-proxmox`)**
+- Local **LLM inference** via [Ollama](https://ollama.com)
+- Multimodal generation with **Stable Diffusion Web UI**
+- Search-enhanced LLM interaction via **Open WebUI** and **SearxNG**
+- Full translation and transcription support using **LibreTranslate** and **Whisper**
+- Fast storage and caching via **Redis** and **MongoDB**
 
 ---
 
-## 🧱 Requirements
-
-- Docker 20.10+ and Docker Compose v2
-- NVIDIA GPU with NVIDIA Container Toolkit (`nvidia-container-runtime`)
-- Pre-created Docker volumes and network (see below)
-- `.env` file with credentials
-
----
-
-## 🗂️ Directory Structure
+## 🗺️ Architecture
 
 ```
-.
-├── docker-compose.yml
-├── .env
-├── stable-diffusion-webui-docker/
-│   └── services/
-│       ├── comfy/
-│       └── download/
-├── agent-proxmox/
-├── mcp-proxmox/
+                   ┌───────────────┐
+                   │  Open WebUI   │
+                   └─────┬─────────┘
+                         │
+             ┌───────────▼────────────┐
+             │       Ollama           │
+             └──────────┬─────────────┘
+                        │
+                        ▼
+    ┌────────────┐   ┌───────────────┐   ┌────────────┐
+    │ Whisper     │<->│LibreTranslate│<->│   MongoDB   │
+    └────────────┘   └───────────────┘   └────────────┘
+
+    ┌────────────┐
+    │ SearxNG    │ <- used for web RAG
+    └────────────┘
+
+    ┌──────────────────────────┐
+    │ Stable Diffusion Web UI  │
+    └──────────────────────────┘
+
+    ┌────────────┐   ┌────────────┐
+    │agent-proxmox│<->│ ai-redis  │
+    └────────────┘   └────────────┘
+
+          ▲
+          │
+    ┌────────────┐
+    │ mcp-proxmox│ (Proxmox controller)
+    └────────────┘
 ```
 
 ---
 
-## 🔧 Setup Instructions
+## 🛠️ Setup
 
-1. **Clone the repository**
+### Prerequisites
+
+- Docker + Docker Compose V2
+- GPU with NVIDIA drivers and `nvidia-container-toolkit`
+- External volumes created (see below)
+
+### 1. Clone
 
 ```bash
-git clone https://gitlab.com/stetter-mcp/gpu-ai-stack.git
-cd gpu-ai-stack
+git clone https://gitlab.com/stetter-homelab/your-stack-repo.git
+cd your-stack-repo
 ```
 
-2. **Create a `.env` file**
+### 2. Create `.env`
 
-Example:
+Copy the provided `.env.example` and customize it:
 
-```ini
+```bash
+cp .env.example .env
+```
+
+Here’s what’s inside:
+
+```env
+# AI Stack (gpu-ai-stack)
+OLLAMA_API_CREDENTIALS=
+DB_USER=
+DB_PASS=
+WHISHPER_HOST=https://whisper.local
+WHISPER_HOST=https://whisper.local
+WHISPER_MODELS=tiny,small
 PUID=1000
 PGID=1000
-REDIS_PASSWORD=secretpassword
-DB_USER=whisper
-DB_PASS=whisper
-WHISHPER_HOST=http://whisper:80
-LANGCHAIN_LOG_DIR=/logs
-LT_LOAD_ONLY=en,fr,es
+
+# Proxmox Agent (agent-proxmox)
+LANGCHAIN_LOG_DIR=/logs/langchain
+REDIS_HOST=
+REDIS_PORT=
+REDIS_PASSWORD=
+SESSION_ID=default
+
+# Proxmox MCP Server (mcp-proxmox)
+PROXMOX_HOST=
+PROXMOX_USER=
+PROXMOX_PASSWORD=
+PROXMOX_VERIFY_SSL=false
 ```
 
-3. **Create required Docker volumes**
+### 3. Create Volumes (if not already)
 
 ```bash
+docker volume create ai-agent-proxmox-logs
+docker volume create ai-mcp-proxmox
 docker volume create ai-ollama
 docker volume create ai-open-webui
 docker volume create ai-searxng
@@ -92,17 +118,9 @@ docker volume create ai-whisper-uploads
 docker volume create ai-whisper-logs
 docker volume create ai-whisper-models
 docker volume create ai-redis-data
-docker volume create ai-agent-proxmox-logs
-docker volume create ai-mcp-proxmox
 ```
 
-4. **Create external network**
-
-```bash
-docker network create gpu-ai-stack
-```
-
-5. **Launch the stack**
+### 4. Start Stack
 
 ```bash
 docker compose up -d
@@ -110,92 +128,28 @@ docker compose up -d
 
 ---
 
-## 🌍 Access Services
+## 🔍 Usage Tips
 
-| App                  | URL                    |
-|----------------------|------------------------|
-| Open WebUI           | http://localhost:8080  |
-| Whisper UI           | http://localhost:8000  |
-| Stable Diffusion UI  | http://localhost:7860  |
-| SearxNG              | http://localhost:8081  |
-| LibreTranslate       | http://localhost:5000  |
-| MongoDB              | mongodb://localhost:27017 |
-| Agent-Proxmox (LangChain) | http://localhost:8501 |
-| MCP-Proxmox (API)    | http://localhost:8008  |
+- Access chat UI at: [http://localhost:8080](http://localhost:8080)
+- Submit Proxmox control prompts like:
 
----
+  ```
+  /proxmox list VMs
+  /proxmox start VM 101
+  /proxmox snapshot VM 102
+  ```
 
-## 🗺 Architecture
-
-> Render this diagram using [Mermaid Live Editor](https://mermaid.live/edit)
-
-```mermaid
-graph TD
-  OLLAMA[Ollama (LLM)] --> WEBUI[Open WebUI]
-  SearxNG --> WEBUI
-  WEBUI --> Redis
-  Redis --> Agent[agent-proxmox]
-  Agent --> MCP[mcp-proxmox]
-  Whisper --> Mongo
-  Whisper --> LibreTranslate
-  Whisper --> WEBUI
-  Comfy[Stable Diffusion / ComfyUI] --> Ollama
-```
+- Access Whisper (transcription): [http://localhost:8000](http://localhost:8000)
+- Access ComfyUI: [http://localhost:7860](http://localhost:7860)
 
 ---
 
-## 🔁 CI/CD & GitLab Registry
+## 📜 License
 
-Images for `agent-proxmox` and `mcp-proxmox` are published to:
-
-- [`registry.gitlab.com/stetter-mcp/agent-proxmox`](https://gitlab.com/stetter-mcp/agent-proxmox/container_registry)
-- [`registry.gitlab.com/stetter-mcp/mcp-proxmox`](https://gitlab.com/stetter-mcp/mcp-proxmox/container_registry)
-
-Example GitLab `.gitlab-ci.yml` for building + pushing:
-
-```yaml
-build_agent_proxmox:
-  stage: build
-  script:
-    - docker build -t registry.gitlab.com/stetter-mcp/agent-proxmox:main ./agent-proxmox
-    - docker push registry.gitlab.com/stetter-mcp/agent-proxmox:main
-```
-
-Use [CI/CD variables](https://docs.gitlab.com/ee/ci/variables/) for `DOCKER_AUTH_CONFIG` or manually `docker login` with a [Deploy Token](https://docs.gitlab.com/ee/user/project/deploy_tokens/).
+MIT. Use at your own risk.
 
 ---
 
-## 🧼 Cleanup
+## 👤 Author
 
-To stop and clean up everything:
-
-```bash
-docker compose down
-docker network rm gpu-ai-stack
-docker volume rm $(docker volume ls -qf 'name=ai-')
-```
-
----
-
-## ✨ Credits
-
-- [Ollama](https://ollama.com/)
-- [Open WebUI](https://github.com/open-webui/open-webui)
-- [SearxNG](https://searxng.github.io/)
-- [LibreTranslate](https://libretranslate.com/)
-- [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
-- [Whishper](https://github.com/pluja/whishper)
-- [LangChain](https://github.com/langchain-ai/langchain)
-- [Proxmox VE](https://www.proxmox.com/proxmox-ve)
-
----
-
-## 👤 Maintained By
-
-**John Stetter**  
-🛠️ DevOps Architect • 🧠 AI Tinkerer • ♿ Accessibility Advocate  
-[GitLab](https://gitlab.com/stetter-mcp)
-
----
-
-> _“Self-hosted AI means freedom — for your models, your data, and your imagination.”_
+Built and maintained by **John Stetter** ([@stetter](https://gitlab.com/stetter-homelab)), an accessibility-focused DevOps architect and AI tinkerer.
