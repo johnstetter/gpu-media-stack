@@ -17,7 +17,7 @@ services:
     gpus: "all"
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -53,7 +53,7 @@ services:
       - host.docker.internal:host-gateway
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -79,7 +79,7 @@ services:
       - open-webui
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -100,7 +100,7 @@ services:
       PGID: "${PGID:-1000}"
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -125,7 +125,7 @@ services:
     gpus: "all"
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -157,7 +157,7 @@ services:
       - "/var/log/mongodb/mongod.log"
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -191,7 +191,7 @@ services:
     gpus: "all"
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -229,7 +229,7 @@ services:
       - translate
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -257,7 +257,7 @@ services:
       - "${REDIS_PASSWORD}"
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -287,7 +287,7 @@ services:
       - ai-redis
 
     networks:
-      - ai-stack
+      - gpu-ai-stack
       - default
 
     volumes:
@@ -320,35 +320,49 @@ services:
 volumes:
   ai-ollama:
     name: ai-ollama
+    external: true
   ai-open-webui:
     name: ai-open-webui
+    external: true
   ai-searxng:
     name: ai-searxng
+    external: true
   ai-stable-diffusion-data:
     name: ai-stable-diffusion-data
+    external: true
   ai-stable-diffusion-output:
     name: ai-stable-diffusion-output
+    external: true
   ai-mongo-db:
     name: ai-mongo-db
+    external: true
   ai-mongo-configdb:
     name: ai-mongo-configdb
+    external: true
   ai-mongo-logs:
     name: ai-mongo-logs
+    external: true
   ai-libretranslate-data:
     name: ai-libretranslate-data
+    external: true
   ai-libretranslate-cache:
     name: ai-libretranslate-cache
+    external: true
   ai-whisper-uploads:
     name: ai-whisper-uploads
+    external: true
   ai-whisper-logs:
     name: ai-whisper-logs
+    external: true
   ai-whisper-models:
     name: ai-whisper-models
+    external: true
   ai-redis-data:
     name: ai-redis-data
+    external: true
 
 networks:
-  ai-stack:
+  gpu-ai-stack:
     external: true
   default:
     driver: bridge
