@@ -1,0 +1,29 @@
+# Global Python cache
+**/__pycache__/
+**/*.py[cod]
+
+# Virtual environments in any stack
+**/.venv/
+
+# Per-stack env files
+**/.env
+**/.env.*
+
+# Logs (e.g. from LangChain or other services)
+**/*.log
+
+# Output / temp files
+**/*.out
+**/*.tmp
+**/*.bak
+**/*.orig
+**/*.swp
+
+# IDE/editor junk
+**/.vscode/
+**/.idea/
+.DS_Store
+Thumbs.db
+
+# Don't ignore example envs
+!**/.env.example

@@ -1,0 +1,13 @@
+services:
+  mcp-proxmox:
+    build: .
+    ports:
+      - "8018:8008"
+    volumes:
+      - .:/app
+    environment:
+      - PROXMOX_HOST=${PROXMOX_HOST}
+      - PROXMOX_USER=${PROXMOX_USER}
+      - PROXMOX_PASSWORD=${PROXMOX_PASSWORD}
+      - PROXMOX_VERIFY_SSL=${PROXMOX_VERIFY_SSL:-false}
+    restart: unless-stopped

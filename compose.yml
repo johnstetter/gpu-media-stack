@@ -1,0 +1,369 @@
+services:
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+
+    command: serve
+
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      OLLAMA_KEEP_ALIVE: "24h"
+      ENABLE_IMAGE_GENERATION: "True"
+      COMFYUI_BASE_URL: "http://stable-diffusion-webui:7860"
+
+    # use string form so Compose V2 accepts it
+    gpus: "all"
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ai-ollama:/root/.ollama
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    ports:
+      - "11434:11434"
+
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: open-webui
+    restart: unless-stopped
+
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      ENABLE_RAG_WEB_SEARCH: "True"
+      RAG_WEB_SEARCH_ENGINE: "searxng"
+      RAG_WEB_SEARCH_RESULT_COUNT: "3"
+      RAG_WEB_SEARCH_CONCURRENT_REQUESTS: "10"
+      SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
+
+    gpus: "all"
+
+    depends_on:
+      - ollama
+
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ai-open-webui:/app/backend/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    ports:
+      - "8080:8080"
+
+
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+
+    depends_on:
+      - ollama
+      - open-webui
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ai-searxng:/etc/searxng
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    ports:
+      - "8081:8080"
+
+
+  stable-diffusion-download:
+    build: ./stable-diffusion-webui-docker/services/download/
+    image: comfy-download
+
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ai-stable-diffusion-data:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+
+  stable-diffusion-webui:
+    build: ./stable-diffusion-webui-docker/services/comfy/
+    image: comfy-ui
+    container_name: stable-diffusion-webui
+    restart: unless-stopped
+    tty: true
+    stop_signal: SIGKILL
+
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      CLI_ARGS: ""
+
+    gpus: "all"
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ai-stable-diffusion-data:/data
+      - ai-stable-diffusion-output:/output
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    ports:
+      - "7860:7860"
+
+
+  mongo:
+    image: docker.io/library/mongo:latest
+    container_name: mongo
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      MONGO_INITDB_ROOT_USERNAME: "${DB_USER:-whisper}"
+      MONGO_INITDB_ROOT_PASSWORD: "${DB_PASS:-whisper}"
+
+    command:
+      - "--logpath"
+      - "/var/log/mongodb/mongod.log"
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ai-mongo-db:/data/db
+      - ai-mongo-configdb:/data/configdb
+      - ai-mongo-logs:/var/log/mongodb
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    ports:
+      - "27017:27017"
+
+
+  translate:
+    image: docker.io/libretranslate/libretranslate:latest-cuda
+    container_name: whisper-libretranslate
+    restart: unless-stopped
+    tty: true
+    user: root
+
+    env_file:
+      - .env
+
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      LT_DISABLE_WEB_UI: "True"
+      LT_LOAD_ONLY: "${LT_LOAD_ONLY:-en,fr,es}"
+      LT_UPDATE_MODELS: "True"
+
+    gpus: "all"
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ai-libretranslate-data:/home/libretranslate/.local/share
+      - ai-libretranslate-cache:/home/libretranslate/.local/cache
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    ports:
+      - "5000:5000"
+
+
+  whisper:
+    image: docker.io/pluja/whishper:latest-gpu
+    container_name: whisper
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      PUBLIC_INTERNAL_API_HOST: "${WHISHPER_HOST}"
+      PUBLIC_TRANSLATION_API_HOST: "${WHISHPER_HOST}"
+      PUBLIC_API_HOST: "${WHISHPER_HOST:-}"
+      PUBLIC_WHISHPER_PROFILE: "gpu"
+      WHISPER_MODELS_DIR: "/app/models"
+      UPLOAD_DIR: "/app/uploads"
+
+    gpus: "all"
+
+    depends_on:
+      - mongo
+      - translate
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ai-whisper-uploads:/app/uploads
+      - ai-whisper-logs:/var/log/whishper
+      - ai-whisper-models:/app/models
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    ports:
+      - "8000:80"
+
+
+  ai-redis:
+    image: redis:7-alpine
+    container_name: ai-redis
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    command:
+      - redis-server
+      - "--requirepass"
+      - "${REDIS_PASSWORD}"
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ai-redis-data:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    ports:
+      - "16379:6379"
+
+
+  agent-proxmox:
+    build: ./agent-proxmox
+    container_name: agent-proxmox
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      REDIS_HOST: "ai-redis"
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+      LANGCHAIN_LOG_DIR: "${LANGCHAIN_LOG_DIR}"
+
+    depends_on:
+      - ai-redis
+
+    networks:
+      - gpu-ai-stack
+      - default
+
+    volumes:
+      - ./agent-proxmox/logs:${LANGCHAIN_LOG_DIR}
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    ports:
+      - "8501:8501"
+
+  mcp-proxmox:
+    build: ./mcp-proxmox 
+    container_name: mcp-proxmox
+    restart: unless-stopped
+
+    ports:
+      - "8008:8008"
+
+    volumes:
+      - ./mcp-proxmox:/app
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+    environment:
+      - PROXMOX_HOST=${PROXMOX_HOST}
+      - PROXMOX_USER=${PROXMOX_USER}
+      - PROXMOX_PASSWORD=${PROXMOX_PASSWORD}
+      - PROXMOX_VERIFY_SSL=${PROXMOX_VERIFY_SSL:-false}
+
+volumes:
+  ai-ollama:
+    name: ai-ollama
+    external: true
+  ai-open-webui:
+    name: ai-open-webui
+    external: true
+  ai-searxng:
+    name: ai-searxng
+    external: true
+  ai-stable-diffusion-data:
+    name: ai-stable-diffusion-data
+    external: true
+  ai-stable-diffusion-output:
+    name: ai-stable-diffusion-output
+    external: true
+  ai-mongo-db:
+    name: ai-mongo-db
+    external: true
+  ai-mongo-configdb:
+    name: ai-mongo-configdb
+    external: true
+  ai-mongo-logs:
+    name: ai-mongo-logs
+    external: true
+  ai-libretranslate-data:
+    name: ai-libretranslate-data
+    external: true
+  ai-libretranslate-cache:
+    name: ai-libretranslate-cache
+    external: true
+  ai-whisper-uploads:
+    name: ai-whisper-uploads
+    external: true
+  ai-whisper-logs:
+    name: ai-whisper-logs
+    external: true
+  ai-whisper-models:
+    name: ai-whisper-models
+    external: true
+  ai-redis-data:
+    name: ai-redis-data
+    external: true
+
+networks:
+  gpu-ai-stack:
+    external: true
+  default:
+    driver: bridge
+

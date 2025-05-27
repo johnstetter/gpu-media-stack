@@ -1,0 +1,7 @@
+langchain
+langchain-community
+redis
+fastapi
+uvicorn
+pydantic
+httpx
