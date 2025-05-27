@@ -1,0 +1,3 @@
+[submodule "stable-diffusion-webui-docker"]
+	path = stable-diffusion-webui-docker
+	url = git@github.com:AbdBarho/stable-diffusion-webui-docker.git
