@@ -1,0 +1,83 @@
+services:
+  emby:
+    image: docker.io/emby/embyserver:latest
+    container_name: emby-server
+    networks:
+      - media-stack
+    restart: unless-stopped
+    ports:
+      - "8096:8096"
+      - "8920:8920"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+    volumes:
+      - media-emby-config:/config
+      - /media/synology/media:/media
+      - /etc/localtime:/etc/localtime:ro
+    devices:
+      - /dev/dri:/dev/dri
+    gpus: all
+
+  plex:
+    image: docker.io/plexinc/pms-docker:latest
+    container_name: plex-server
+    networks:
+      - media-stack
+    restart: unless-stopped
+    ports:
+      - "42400:32400"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+    volumes:
+      - media-plex-config:/config
+      - /media/synology/media:/media
+      - /tmp:/transcode
+      - /etc/localtime:/etc/localtime:ro
+    devices:
+      - /dev/dri:/dev/dri
+    gpus: all
+
+  jellyfin:
+    image: docker.io/jellyfin/jellyfin:latest
+    container_name: jellyfin-server
+    networks:
+      - media-stack
+    restart: unless-stopped
+    ports:
+      - "8097:8096"
+      - "8921:8920"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+    volumes:
+      - media-jellyfin-config:/config
+      - media-jellyfin-cache:/cache
+      - /media/synology/media:/media
+      - /etc/localtime:/etc/localtime:ro
+    devices:
+      - /dev/dri:/dev/dri
+    gpus: all
+
+volumes:
+  media-emby-config:
+    name: media-emby-config
+  media-plex-config:
+    name: media-plex-config
+  media-jellyfin-config:
+    name: media-jellyfin-config
+  media-jellyfin-cache:
+    name: media-jellyfin-cache
+
+networks:
+  media-stack:
+    name: media-stack
+    driver: bridge
