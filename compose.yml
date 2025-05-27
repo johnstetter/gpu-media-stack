@@ -70,12 +70,16 @@ services:
 volumes:
   media-emby-config:
     name: media-emby-config
+    external: true
   media-plex-config:
     name: media-plex-config
+    external: true
   media-jellyfin-config:
     name: media-jellyfin-config
+    external: true
   media-jellyfin-cache:
     name: media-jellyfin-cache
+    external: true
 
 networks:
   media-stack:
