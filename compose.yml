@@ -42,7 +42,7 @@ services:
       RAG_WEB_SEARCH_ENGINE: "searxng"
       RAG_WEB_SEARCH_RESULT_COUNT: "3"
       RAG_WEB_SEARCH_CONCURRENT_REQUESTS: "10"
-      SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
+      SEARXNG_QUERY_URL: "http://searxng:8081/search?q=<query>"
 
     gpus: "all"
 
@@ -62,7 +62,7 @@ services:
       - /etc/timezone:/etc/timezone:ro
 
     ports:
-      - "8080:8080"
+      - "8888:8080"
 
 
   searxng:
