@@ -1,155 +1,119 @@
-# 🧠 GPU-AI-Stack: Local AI Chat, Generation, and Proxmox Control Suite
+# GPU AI Stack
 
-Welcome to the **GPU-AI-Stack**, an integrated containerized AI system that combines local LLMs, multimodal generation, and infrastructure control for your homelab or research environment. This stack stitches together:
+This repository contains a Docker Compose stack designed for GPU-accelerated AI workloads. It includes a variety of services for AI model serving, data processing, and auxiliary tools. The stack is optimized for environments with GPU resources and is intended for developers and researchers working on AI projects.
 
-- **LangChain-powered Proxmox agent (`agent-proxmox`)**
-- **MCP control server (`mcp-proxmox`)**
-- Local **LLM inference** via [Ollama](https://ollama.com)
-- Multimodal generation with **Stable Diffusion Web UI**
-- Search-enhanced LLM interaction via **Open WebUI** and **SearxNG**
-- Full translation and transcription support using **LibreTranslate** and **Whisper**
-- Fast storage and caching via **Redis** and **MongoDB**
+## Table of Contents
 
----
+- [Overview](#overview)
+- [Services](#services)
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Usage](#usage)
+- [Volumes and Networks](#volumes-and-networks)
+- [Contributing](#contributing)
+- [License](#license)
 
-## 🗺️ Architecture
+## Overview
 
-```
-                   ┌───────────────┐
-                   │  Open WebUI   │
-                   └─────┬─────────┘
-                         │
-             ┌───────────▼────────────┐
-             │       Ollama           │
-             └──────────┬─────────────┘
-                        │
-                        ▼
-    ┌────────────┐   ┌───────────────┐   ┌────────────┐
-    │ Whisper     │<->│LibreTranslate│<->│   MongoDB   │
-    └────────────┘   └───────────────┘   └────────────┘
+This stack includes the following key services:
 
-    ┌────────────┐
-    │ SearxNG    │ <- used for web RAG
-    └────────────┘
+- **Ollama**: A service for AI model serving with GPU acceleration.
+- **Open-WebUI**: A web-based interface for interacting with AI models.
+- **SearxNG**: A privacy-respecting metasearch engine.
+- **Stable Diffusion WebUI**: A web interface for Stable Diffusion models.
+- **MongoDB**: A NoSQL database for storing application data.
+- **LibreTranslate**: A GPU-accelerated translation service.
+- **Whisper**: A speech-to-text service optimized for GPU.
+- **Redis**: An in-memory data structure store for caching and messaging.
+- **Agent-Proxmox**: A LangChain agent used to interface between the LLM and the MCP server.
+- **MCP-Proxmox**: A Model Context Protocol (MCP) server designed to interface with Proxmox, including client examples.
 
-    ┌──────────────────────────┐
-    │ Stable Diffusion Web UI  │
-    └──────────────────────────┘
+## Prerequisites
 
-    ┌────────────┐   ┌────────────┐
-    │agent-proxmox│<->│ ai-redis  │
-    └────────────┘   └────────────┘
+- Docker and Docker Compose installed on your system.
+- A machine with GPU support and the necessary drivers installed (e.g., NVIDIA drivers and CUDA).
+- Access to the GitLab container registry for pulling private images.
 
-          ▲
-          │
-    ┌────────────┐
-    │ mcp-proxmox│ (Proxmox controller)
-    └────────────┘
-```
+## Setup
 
----
+1. Clone this repository:
+   ```bash
+   git clone https://gitlab.com/your-repo/gpu-ai-stack.git
+   cd gpu-ai-stack
+   ```
 
-## 🛠️ Setup
+2. Ensure your environment variables are set correctly. Create a `.env` file in the root directory with the following variables:
+   ```env
+   PUID=1000
+   PGID=1000
+   REDIS_PASSWORD=your_redis_password
+   DB_USER=your_db_user
+   DB_PASS=your_db_password
+   PROXMOX_HOST=your_proxmox_host
+   PROXMOX_USER=your_proxmox_user
+   PROXMOX_PASSWORD=your_proxmox_password
+   ```
 
-### Prerequisites
+3. Pull the required images:
+   ```bash
+   docker-compose pull
+   ```
 
-- Docker + Docker Compose V2
-- GPU with NVIDIA drivers and `nvidia-container-toolkit`
-- External volumes created (see below)
+4. Start the stack:
+   ```bash
+   docker-compose up -d
+   ```
 
-### 1. Clone
+## Usage
 
-```bash
-git clone https://gitlab.com/stetter-homelab/gpu-ai-stack.git
-cd gpu-ai-stasck
-```
+- Access the services via their respective ports:
+  - Ollama: `http://localhost:11434`
+  - Open-WebUI: `http://localhost:8080`
+  - SearxNG: `http://localhost:8081`
+  - Stable Diffusion WebUI: `http://localhost:7860`
+  - MongoDB: `mongodb://localhost:27017`
+  - LibreTranslate: `http://localhost:5000`
+  - Whisper: `http://localhost:8000`
+  - Redis: `redis://localhost:16379`
+  - Agent-Proxmox: `http://localhost:8501`
+  - MCP-Proxmox: `http://localhost:8008`
 
-### 2. Create `.env`
+- Logs and data are stored in the respective volumes defined in the `docker-compose.yml` file.
 
-Copy the provided `.env.example` and customize it:
+## Volumes and Networks
 
-```bash
-cp .env.example .env
-```
+### Volumes
 
-Here’s what’s inside:
+The stack uses the following external volumes:
 
-```env
-# AI Stack (gpu-ai-stack)
-OLLAMA_API_CREDENTIALS=
-DB_USER=
-DB_PASS=
-WHISHPER_HOST=https://whisper.local
-WHISPER_HOST=https://whisper.local
-WHISPER_MODELS=tiny,small
-PUID=1000
-PGID=1000
+- `ai-ollama`
+- `ai-open-webui`
+- `ai-searxng`
+- `ai-stable-diffusion-data`
+- `ai-stable-diffusion-output`
+- `ai-mongo-db`
+- `ai-mongo-configdb`
+- `ai-mongo-logs`
+- `ai-libretranslate-data`
+- `ai-libretranslate-cache`
+- `ai-whisper-uploads`
+- `ai-whisper-logs`
+- `ai-whisper-models`
+- `ai-redis-data`
+- `ai-agent-proxmox-logs`
+- `ai-mcp-proxmox`
 
-# Proxmox Agent (agent-proxmox)
-LANGCHAIN_LOG_DIR=/logs/langchain
-REDIS_HOST=
-REDIS_PORT=
-REDIS_PASSWORD=
-SESSION_ID=default
+### Networks
 
-# Proxmox MCP Server (mcp-proxmox)
-PROXMOX_HOST=
-PROXMOX_USER=
-PROXMOX_PASSWORD=
-PROXMOX_VERIFY_SSL=false
-```
+The stack uses the following networks:
 
-### 3. Create Volumes (if not already)
+- `gpu-ai-stack` (external)
+- `default`
 
-```bash
-docker volume create ai-agent-proxmox-logs
-docker volume create ai-mcp-proxmox
-docker volume create ai-ollama
-docker volume create ai-open-webui
-docker volume create ai-searxng
-docker volume create ai-stable-diffusion-data
-docker volume create ai-stable-diffusion-output
-docker volume create ai-mongo-db
-docker volume create ai-mongo-configdb
-docker volume create ai-mongo-logs
-docker volume create ai-libretranslate-data
-docker volume create ai-libretranslate-cache
-docker volume create ai-whisper-uploads
-docker volume create ai-whisper-logs
-docker volume create ai-whisper-models
-docker volume create ai-redis-data
-```
+## Contributing
 
-### 4. Start Stack
+Contributions are welcome! Please open an issue or submit a merge request for any improvements or bug fixes.
 
-```bash
-docker compose up -d
-```
+## License
 
----
-
-## 🔍 Usage Tips (WIP!)
-
-- Access chat UI at: [http://localhost:8080](http://localhost:8080)
-- Submit Proxmox control prompts like:
-
-  ```
-  /proxmox list VMs
-  /proxmox start VM 101
-  /proxmox snapshot VM 102
-  ```
-
-- Access Whisper (transcription): [http://localhost:8000](http://localhost:8000)
-- Access ComfyUI: [http://localhost:7860](http://localhost:7860)
-
----
-
-## 📜 License
-
-MIT. Use at your own risk.
-
----
-
-## 👤 Author
-
-Built and maintained by **John Stetter** ([@stetter](https://gitlab.com/stetter-homelab)), an accessibility-focused DevOps architect and AI tinkerer.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
