@@ -1,9 +1,10 @@
 services:
+
   emby:
     image: docker.io/emby/embyserver:latest
     container_name: emby-server
     networks:
-      - media-stack
+      - gpu-media-stack
     restart: unless-stopped
     ports:
       - "8096:8096"
@@ -15,7 +16,7 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
     volumes:
       - media-emby-config:/config
-      - /media/synology/media:/media
+      - /mnt/synology/media:/media
       - /etc/localtime:/etc/localtime:ro
     devices:
       - /dev/dri:/dev/dri
@@ -25,7 +26,7 @@ services:
     image: docker.io/plexinc/pms-docker:latest
     container_name: plex-server
     networks:
-      - media-stack
+      - gpu-media-stack
     restart: unless-stopped
     ports:
       - "42400:32400"
@@ -37,7 +38,7 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
     volumes:
       - media-plex-config:/config
-      - /media/synology/media:/media
+      - /mnt/synology/media:/media
       - /tmp:/transcode
       - /etc/localtime:/etc/localtime:ro
     devices:
@@ -48,7 +49,7 @@ services:
     image: docker.io/jellyfin/jellyfin:latest
     container_name: jellyfin-server
     networks:
-      - media-stack
+      - gpu-media-stack
     restart: unless-stopped
     ports:
       - "8097:8096"
@@ -61,11 +62,172 @@ services:
     volumes:
       - media-jellyfin-config:/config
       - media-jellyfin-cache:/cache
-      - /media/synology/media:/media
+      - /mnt/synology/media:/media
       - /etc/localtime:/etc/localtime:ro
     devices:
       - /dev/dri:/dev/dri
     gpus: all
+
+
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    ports:
+      - 8080:8080   # SABnzbd
+      - 8989:8989   # Sonarr
+      - 7878:7878   # Radarr
+      - 8686:8686   # Lidarr
+      - 6767:6767   # Bazarr
+    volumes:
+      - media-gluetun-config:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - OPENVPN_USER=${PROTONVPN_USER}
+      - OPENVPN_PASSWORD=${PROTONVPN_PASS}
+      - VPN_TYPE=openvpn
+      - SERVER_COUNTRIES=United States
+      - TZ=America/Chicago
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.1.0/24
+      - BLOCK_MALICIOUS=false
+    restart: unless-stopped
+
+  tautulli:
+    container_name: tautulli
+    hostname: tautulli.slowplanet.net
+    image: linuxserver/tautulli
+    restart: unless-stopped
+    ports:
+      - 8181:8181/tcp
+    environment:
+      - TZ=America/Chicago
+      - PGID=65536
+      - PUID=1026
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - media-tautulli-config:/config
+    labels:
+      - flame.type=application
+      - flame.name=Tautulli
+      - flame.url=https://tautulli.slowplanet.net
+      - flame.icon=car-light-high
+
+  sonarr:
+    container_name: sonarr
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - sabnzbd
+    image: linuxserver/sonarr
+    restart: always
+    environment:
+      - TZ=America/Chicago
+      - PGID=65536
+      - PUID=1026
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/synology/docker/sonarr/config:/config
+      - /mnt/synology/media/video/tv:/tv
+      - /mnt/synology/media/downloads/complete:/downloads
+    labels:
+      - flame.type=application
+      - flame.name=Sonarr
+      - flame.url=https://sonarr.slowplanet.net
+      - flame.icon=television
+
+  sabnzbd:
+    container_name: sabnzbd
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    image: linuxserver/sabnzbd
+    restart: always
+    environment:
+      - TZ=America/Chicago
+      - PGID=65536
+      - PUID=1026
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/synology/docker/sabnzbd/config:/config
+      - /mnt/synology/media/downloads/complete:/downloads
+      - /mnt/synology/media/downloads/incomplete:/incomplete-downloads
+    labels:
+      - flame.type=application
+      - flame.name=SABnzbd
+      - flame.url=https://sabnzbd.slowplanet.net
+      - flame.icon=download
+
+  radarr:
+    container_name: radarr
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - sabnzbd
+    image: linuxserver/radarr
+    restart: always
+    environment:
+      - TZ=America/Chicago
+      - PGID=65536
+      - PUID=1026
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/synology/docker/radarr/config:/config
+      - /mnt/synology/media/downloads/complete:/downloads
+      - /mnt/synology/media/video/movies:/movies
+    labels:
+      - flame.type=application
+      - flame.name=Radarr
+      - flame.url=https://radarr.slowplanet.net
+      - flame.icon=movies
+
+  lidarr:
+    container_name: lidarr
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - sabnzbd
+    image: linuxserver/lidarr
+    restart: always
+    environment:
+      - TZ=America/Chicago
+      - PGID=65536
+      - PUID=1026
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/synology/docker/lidarr/config:/config
+      - /mnt/synology/media/downloads/complete:/downloads
+      - /mnt/synology/media/music:/music
+    labels:
+      - flame.type=application
+      - flame.name=Lidarr
+      - flame.url=https://lidarr.slowplanet.net
+      - flame.icon=music
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=65536
+      - PGID=1026
+      - TZ=America/Chicago
+    volumes:
+      - /mnt/synology/docker/bazarr/config:/config
+      - /mnt/synology/media/video/movies:/movies
+      - /mnt/synology/media/video/tv:/tv
+    restart: unless-stopped
+    labels:
+      - flame.type=application
+      - flame.name=Bazarr
+      - flame.url=https://bazarr.slowplanet.net
+      - flame.icon=docker
+
+
 
 volumes:
   media-emby-config:
@@ -80,8 +242,29 @@ volumes:
   media-jellyfin-cache:
     name: media-jellyfin-cache
     external: true
+  media-gluetun-config:
+    name: media-gluetun-config
+    external: true
+  media-tautulli-config:
+    name: media-tautulli-config
+    external: true
+  media-sonarr-config:
+    name: media-sonarr-config
+    external: true
+  media-sabnzbd-config:
+    name: media-sabnzbd-config
+    external: true
+  media-radarr-config:
+    name: media-radarr-config
+    external: true
+  media-lidarr-config:
+    name: media-lidarr-config
+    external: true
+  media-bazarr-config:
+    name: media-bazarr-config
+    external: true
 
 networks:
-  media-stack:
-    name: media-stack
+  gpu-media-stack:
+    name: gpu-media-stack
     driver: bridge

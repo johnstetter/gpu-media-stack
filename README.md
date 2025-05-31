@@ -1,313 +1,113 @@
-# Docker Compose Container Stacks
-=======
-# compose-stacks
+# GPU Media Stack
 
-This repository contains various Docker Compose stacks organized by function:
+This project is a GPU-accelerated media stack designed to manage and stream your media collection efficiently. It leverages Docker containers to run various media-related services, all configured to work seamlessly together.
 
-## Stacks Overview
+## Table of Contents
 
-### AI Stack (`ai-stack`)
+- [Overview](#overview)
+- [Services](#services)
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Usage](#usage)
+- [Volumes and Networks](#volumes-and-networks)
+- [Troubleshooting](#troubleshooting)
 
-- **Ollama:** Local LLM inference engine supporting GPU acceleration.
-- **Open WebUI:** Web interface for chat interfaces and model interactions, integrated with Ollama.
-- **SearXNG:** Privacy-focused metasearch engine for web searches used in retrieval-augmented generation (RAG).
-- **Stable Diffusion (ComfyUI):** Local web-based interface for image generation.
-- **MongoDB:** NoSQL database supporting Whisper.
-- **Whisper:** GPU-accelerated transcription service with LibreTranslate integration for multilingual translations.
+## Overview
 
-### Media Stack (`media-stack`)
+The GPU Media Stack includes the following services:
 
-- **Emby:** Media server providing video streaming with GPU transcoding support.
-- **Plex:** Popular media server with GPU-accelerated transcoding.
-- **Jellyfin:** Open-source media server with hardware transcoding capabilities.
+- **Emby**: A media server for organizing and streaming your media.
+- **Plex**: Another popular media server with GPU acceleration.
+- **Jellyfin**: A free and open-source media server.
+- **Gluetun**: A VPN client to secure your network traffic.
+- **Tautulli**: A monitoring tool for Plex.
+- **Sonarr**: A TV show management tool.
+- **Radarr**: A movie management tool.
+- **Lidarr**: A music management tool.
+- **Bazarr**: A subtitle management tool.
+- **SABnzbd**: A Usenet downloader.
 
-### WordPress Stack (`wordpress-stack`)
+## Prerequisites
 
-- **WordPress:** Popular blogging and content management platform.
-- **MySQL:** Relational database backend.
-- **phpMyAdmin:** Web-based administration tool for MySQL.
+Before you begin, ensure you have the following:
 
-### TubeArchivist Stack (`tubearchivist-stack`)
+- A Linux-based operating system.
+- Docker and Docker Compose installed.
+- NVIDIA GPU drivers installed and configured.
+- Access to a VPN service (e.g., ProtonVPN).
 
-- **TubeArchivist:** Video archiving and YouTube indexing tool.
-- **ElasticSearch:** Search and analytics engine for indexing TubeArchivist data.
-- **Redis:** High-performance key-value store used by TubeArchivist.
+## Setup
 
-### Infrastructure Stack (`infra-stack`)
+1. Clone this repository:
 
-- **Portainer Agent:** Remote agent for managing Docker environments through Portainer UI.
+   ```zsh
+   git clone <repository-url>
+   cd gpu-media-stack
+   ```
 
----
+2. Create a `.env` file in the project root and define the following variables:
 
-## Usage Instructions
+   ```env
+   PROTONVPN_USER=<your-vpn-username>
+   PROTONVPN_PASS=<your-vpn-password>
+   ```
 
-### Start a Stack
+3. Start the stack:
 
-Navigate to the desired stack directory and start containers in detached mode:
-```shell
-docker compose up -d
-```
+   ```zsh
+   docker-compose up -d
+   ```
 
-**Example:**
-```shell
-cd ai-stack
-docker compose up -d
-```
----
+## Usage
 
-### Stop a Stack
+- Access the services via the following URLs:
+  - Emby: `http://localhost:8096`
+  - Plex: `http://localhost:42400`
+  - Jellyfin: `http://localhost:8097`
+  - Sonarr: `http://localhost:8989`
+  - Radarr: `http://localhost:7878`
+  - Lidarr: `http://localhost:8686`
+  - Bazarr: `http://localhost:6767`
+  - SABnzbd: `http://localhost:8080`
+  - Tautulli: `http://localhost:8181`
 
-Navigate to the stack directory and stop/remove containers:
-```shell
-docker compose down
-```
+## Volumes and Networks
 
-**Example:**
-```shell
-cd ai-stack
-docker compose down
-```
+### Volumes
 
----
+The stack uses the following external volumes to persist data:
 
-### Update or Rebuild Containers
+- `media-emby-config`
+- `media-plex-config`
+- `media-jellyfin-config`
+- `media-jellyfin-cache`
+- `media-gluetun-config`
+- `media-tautulli-config`
+- `media-sonarr-config`
+- `media-sabnzbd-config`
+- `media-radarr-config`
+- `media-lidarr-config`
+- `media-bazarr-config`
 
-Pull the latest images and recreate containers with:
-```shell
-docker compose pull
-docker compose up -d –build
-```
+### Networks
 
-**Example:**
-```shell
-cd ai-stack
-docker compose pull
-docker compose up -d –build
-```
+- `gpu-media-stack`: A custom bridge network for inter-container communication.
 
----
+## Troubleshooting
 
----
+- Ensure your NVIDIA drivers are up-to-date.
+- Check the logs of individual containers for errors:
 
-### Check Container Logs
+  ```zsh
+  docker logs <container_name>
+  ```
 
-To stream container logs in real-time, run:
-```shell
-docker compose logs -f
-```
+- Verify your `.env` file contains the correct VPN credentials.
 
-**Example:**
-```shell
-cd ai-stack
-docker compose logs -f
-```
+## Contributing
 
----
+Contributions are welcome! Please submit a pull request or open an issue for any suggestions or improvements.
 
-## Environment Variables and Secrets
+## License
 
-Sensitive credentials and configuration parameters are stored in `.env` files located at the root of each stack directory. These files are intentionally excluded from version control.
-
-### Recommended `.gitignore`
-
-Include the following `.gitignore` at the repository root to avoid leaking sensitive data:
-```
-.env
-*.log
-.DS_Store
-```
-
----
-
-## Initial Setup and Database Initialization
-
-- **WordPress Stack:** On first run, WordPress automatically initializes the database based on environment variables.
-- **TubeArchivist Stack:** On first run, TubeArchivist initializes its Elasticsearch indices automatically.
-
----
-
-## Accessing Services
-
-Here are default ports for primary service access:
-
-### AI Stack
-| Service                 | URL                            |
-|-------------------------|--------------------------------|
-| Open WebUI              | `http://localhost:8080`        |
-| Ollama API              | `http://localhost:11434`       |
-| SearXNG                 | `http://localhost:8081`        |
-| Stable Diffusion (UI)   | `http://localhost:7860`        |
-| Whisper API             | `http://localhost:8000`        |
-
-
-
-# Docker Compose Container Stacks
-
-This repository contains various Docker Compose stacks organized by function:
-
-## Stacks Overview
-
-### AI Stack (`ai-stack`)
-
-- **Ollama:** Local LLM inference engine supporting GPU acceleration.
-- **Open WebUI:** Web interface for chat interfaces and model interactions, integrated with Ollama.
-- **SearXNG:** Privacy-focused metasearch engine for web searches used in retrieval-augmented generation (RAG).
-- **Stable Diffusion (ComfyUI):** Local web-based interface for image generation.
-- **MongoDB:** NoSQL database supporting Whisper.
-- **Whisper:** GPU-accelerated transcription service with LibreTranslate integration for multilingual translations.
-
-### Media Stack (`media-stack`)
-
-- **Emby:** Media server providing video streaming with GPU transcoding support.
-- **Plex:** Popular media server with GPU-accelerated transcoding.
-- **Jellyfin:** Open-source media server with hardware transcoding capabilities.
-
-### WordPress Stack (`wordpress-stack`)
-
-- **WordPress:** Popular blogging and content management platform.
-- **MySQL:** Relational database backend.
-- **phpMyAdmin:** Web-based administration tool for MySQL.
-
-### TubeArchivist Stack (`tubearchivist-stack`)
-
-- **TubeArchivist:** Video archiving and YouTube indexing tool.
-- **ElasticSearch:** Search and analytics engine for indexing TubeArchivist data.
-- **Redis:** High-performance key-value store used by TubeArchivist.
-
-### Infrastructure Stack (`infra-stack`)
-
-- **Portainer Agent:** Remote agent for managing Docker environments through Portainer UI.
-
----
-
-## Usage Instructions
-
-### Start a Stack
-
-Navigate to the desired stack directory and start containers in detached mode:
-```shell
-docker compose up -d
-```
-
-**Example:**
-```shell
-cd ai-stack
-docker compose up -d
-```
----
-
-### Stop a Stack
-
-Navigate to the stack directory and stop/remove containers:
-```shell
-docker compose down
-```
-
-**Example:**
-```shell
-cd ai-stack
-docker compose down
-```
-
----
-
-### Update or Rebuild Containers
-
-Pull the latest images and recreate containers with:
-```shell
-docker compose pull
-docker compose up -d –build
-```
-
-**Example:**
-```shell
-cd ai-stack
-docker compose pull
-docker compose up -d –build
-```
-
----
-
----
-
-### Check Container Logs
-
-To stream container logs in real-time, run:
-```shell
-docker compose logs -f
-```
-
-**Example:**
-```shell
-cd ai-stack
-docker compose logs -f
-```
-
----
-
-## Environment Variables and Secrets
-
-Sensitive credentials and configuration parameters are stored in `.env` files located at the root of each stack directory. These files are intentionally excluded from version control.
-
-### Recommended `.gitignore`
-
-Include the following `.gitignore` at the repository root to avoid leaking sensitive data:
-```
-.env
-*.log
-.DS_Store
-```
-
----
-
-## Initial Setup and Database Initialization
-
-- **WordPress Stack:** On first run, WordPress automatically initializes the database based on environment variables.
-- **TubeArchivist Stack:** On first run, TubeArchivist initializes its Elasticsearch indices automatically.
-
----
-
-## Accessing Services
-
-Here are default ports for primary service access:
-
-### AI Stack
-| Service                 | URL                            |
-|-------------------------|--------------------------------|
-| Open WebUI              | `http://localhost:8080`        |
-| Ollama API              | `http://localhost:11434`       |
-| SearXNG                 | `http://localhost:8081`        |
-| Stable Diffusion (UI)   | `http://localhost:7860`        |
-| Whisper API             | `http://localhost:8000`        |
-
->>>>>>> a011806 (Initial commit: Add Docker Compose stacks)
-### Media Stack
-| Service                 | URL                            |
-|-------------------------|--------------------------------|
-| Emby                    | `http://localhost:8096`        |
-| Plex                    | `http://localhost:42400`       |
-| Jellyfin                | `http://localhost:8097`        |
-
-### WordPress Stack
-| Service                 | URL                            |
-|-------------------------|--------------------------------|
-| WordPress               | `http://localhost:8888`        |
-| phpMyAdmin              | `http://localhost:3001`        |
-
-### TubeArchivist Stack
-| Service                 | URL                            |
-|-------------------------|--------------------------------|
-| TubeArchivist           | `http://localhost:8001`        |
-
-### Infrastructure Stack
-- Portainer Agent: Managed via external Portainer server.
-| Service                 | URL                            |
-|-------------------------|--------------------------------|
-| Portainer Agent         | `http://localhost:9001`        |
-
----
-
-## Contributing and Issues
-
-For contributions, please create pull requests or open issues on GitLab. Ensure all sensitive data remains excluded from version control.
-
+This project is licensed under the MIT License.
