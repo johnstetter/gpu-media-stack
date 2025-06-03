@@ -1,0 +1,22 @@
+stages:
+  - mirror
+
+sync_to_github:
+  stage: mirror
+  image: alpine:latest
+  only:
+    refs:
+      - main
+      - /^v\d+\.\d+\.\d+$/  # version tags like v1.2.3
+  script:
+    - apk add --no-cache git openssh
+    - git config --global user.email "john@stetter.io"
+    - git config --global user.name "John Stetter"
+    - git remote add github "$GITHUB_REPO_URL"
+    - git push github HEAD:main  # push current branch to main
+    - |
+      if echo "$CI_COMMIT_REF_NAME" | grep -qE '^v\d+\.\d+\.\d+$'; then
+        echo "Pushing tag $CI_COMMIT_REF_NAME to GitHub..."
+        git push github "$CI_COMMIT_REF_NAME"
+      fi
+
