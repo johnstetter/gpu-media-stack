@@ -10,8 +10,8 @@ services:
       - "8096:8096"
       - "8920:8920"
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=1024
+      - PGID=100
       - NVIDIA_VISIBLE_DEVICES=0
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
     volumes:
@@ -31,8 +31,8 @@ services:
     ports:
       - "42400:32400"
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=1024
+      - PGID=100
       - TZ=America/Chicago
       - NVIDIA_VISIBLE_DEVICES=0
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
@@ -55,8 +55,8 @@ services:
       - "8097:8096"
       - "8921:8920"
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=1024
+      - PGID=100
       - NVIDIA_VISIBLE_DEVICES=0
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
     volumes:
@@ -104,8 +104,8 @@ services:
       - 8181:8181/tcp
     environment:
       - TZ=America/Chicago
-      - PGID=65536
-      - PUID=1026
+      - PGID=100
+      - PUID=1024
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - media-tautulli-config:/config
@@ -125,8 +125,8 @@ services:
     restart: always
     environment:
       - TZ=America/Chicago
-      - PGID=65536
-      - PUID=1026
+      - PGID=100
+      - PUID=1024
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /mnt/synology/docker/sonarr/config:/config
@@ -147,8 +147,8 @@ services:
     restart: always
     environment:
       - TZ=America/Chicago
-      - PGID=65536
-      - PUID=1026
+      - PGID=100
+      - PUID=1024
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /mnt/synology/docker/sabnzbd/config:/config
@@ -170,8 +170,8 @@ services:
     restart: always
     environment:
       - TZ=America/Chicago
-      - PGID=65536
-      - PUID=1026
+      - PGID=100
+      - PUID=1024
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /mnt/synology/docker/radarr/config:/config
@@ -193,8 +193,8 @@ services:
     restart: always
     environment:
       - TZ=America/Chicago
-      - PGID=65536
-      - PUID=1026
+      - PGID=100
+      - PUID=1024
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /mnt/synology/docker/lidarr/config:/config
@@ -213,8 +213,8 @@ services:
     depends_on:
       - gluetun
     environment:
-      - PUID=65536
-      - PGID=1026
+      - PUID=1024
+      - PGID=100
       - TZ=America/Chicago
     volumes:
       - /mnt/synology/docker/bazarr/config:/config
@@ -226,8 +226,6 @@ services:
       - flame.name=Bazarr
       - flame.url=https://bazarr.slowplanet.net
       - flame.icon=docker
-
-
 
 volumes:
   media-emby-config:
