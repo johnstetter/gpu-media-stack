@@ -5,14 +5,13 @@ variables:
   GIT_SSH_COMMAND: 'ssh -o StrictHostKeyChecking=no'
 
 .sync_env_setup: &sync_env_setup
-  before_script:
-    - apk add --no-cache git openssh
-    - mkdir -p ~/.ssh
-    - echo "$GITHUB_SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
-    - chmod 600 ~/.ssh/id_ed25519
-    - ssh-keyscan github.com >> ~/.ssh/known_hosts
-    - git config --global user.name "$GIT_AUTHOR_NAME"
-    - git config --global user.email "$GIT_AUTHOR_EMAIL"
+  - apk add --no-cache git openssh
+  - mkdir -p ~/.ssh
+  - echo "$GITHUB_SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
+  - chmod 600 ~/.ssh/id_ed25519
+  - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  - git config --global user.name "$GIT_AUTHOR_NAME"
+  - git config --global user.email "$GIT_AUTHOR_EMAIL"
 
 push_tags_on_main:
   stage: mirror
