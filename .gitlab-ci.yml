@@ -19,8 +19,8 @@ push_tags_on_main:
   only:
     refs:
       - main
+  before_script: *sync_env_setup
   script:
-    - *sync_env_setup
     - git remote add github "$GITHUB_REPO"
     - git push --tags github
 
@@ -29,7 +29,7 @@ push_version_tag:
   only:
     refs:
       - /^v\d+\.\d+\.\d+$/
+  before_script: *sync_env_setup
   script:
-    - *sync_env_setup
     - git remote add github "$GITHUB_REPO"
     - git push github "$CI_COMMIT_REF_NAME"
