@@ -68,7 +68,6 @@ services:
       - /dev/dri:/dev/dri
     gpus: all
 
-
   gluetun:
     image: qmcgaw/gluetun
     container_name: gluetun
