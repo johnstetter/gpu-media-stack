@@ -1,119 +1,178 @@
 # GPU AI Stack
 
-This repository contains a Docker Compose stack designed for GPU-accelerated AI workloads. It includes a variety of services for AI model serving, data processing, and auxiliary tools. The stack is optimized for environments with GPU resources and is intended for developers and researchers working on AI projects.
+Docker Compose stack for GPU-accelerated AI services including LLM serving, image generation, speech processing, and infrastructure automation.
 
-## Table of Contents
+## Services
 
-- [Overview](#overview)
-- [Services](#services)
-- [Prerequisites](#prerequisites)
-- [Setup](#setup)
-- [Usage](#usage)
-- [Volumes and Networks](#volumes-and-networks)
-- [Contributing](#contributing)
-- [License](#license)
+| Service | Image | Port | GPU | Description |
+|---------|-------|------|-----|-------------|
+| `ollama` | `ollama/ollama:0.9.5` | 11434 | ✓ | LLM inference server |
+| `open-webui` | `ghcr.io/open-webui/open-webui:main` | 8888 | ✓ | Web interface for LLMs with RAG |
+| `searxng` | `searxng/searxng:2025.6.26-c6e0ad9` | 8081 | - | Privacy-focused metasearch engine |
+| `stable-diffusion-webui` | `comfy-ui` (local build) | 7860 | ✓ | ComfyUI for image generation |
+| `stable-diffusion-download` | `comfy-download` (local build) | - | - | Model downloader (init container) |
+| `mongo` | `mongo:6.0` | 27017 | - | Database for whisper service |
+| `translate` | `libretranslate/libretranslate:v1.6.2-cuda` | 5000 | ✓ | GPU-accelerated translation |
+| `whisper` | `pluja/web-whisper-backend:1.3.1` | 8000 | ✓ | Speech-to-text transcription |
+| `ai-redis` | `redis:7-alpine` | 16379 | - | Cache and message broker |
+| `agent-proxmox` | `registry.gitlab.com/stetter-mcp/agent-proxmox:main` | 8501 | - | LangChain agent for Proxmox |
+| `mcp-proxmox` | `registry.gitlab.com/stetter-mcp/mcp-proxmox:main` | 8008 | - | Model Context Protocol server |
 
-## Overview
+## Requirements
 
-This stack includes the following key services:
+- NVIDIA GPU with CUDA support
+- Docker with GPU runtime (`nvidia-docker2`)
+- Docker Compose v2
+- 16GB+ RAM recommended
+- 50GB+ storage for models and data
 
-- **Ollama**: A service for AI model serving with GPU acceleration.
-- **Open-WebUI**: A web-based interface for interacting with AI models.
-- **SearxNG**: A privacy-respecting metasearch engine.
-- **Stable Diffusion WebUI**: A web interface for Stable Diffusion models.
-- **MongoDB**: A NoSQL database for storing application data.
-- **LibreTranslate**: A GPU-accelerated translation service.
-- **Whisper**: A speech-to-text service optimized for GPU.
-- **Redis**: An in-memory data structure store for caching and messaging.
-- **Agent-Proxmox**: A LangChain agent used to interface between the LLM and the MCP server.
-- **MCP-Proxmox**: A Model Context Protocol (MCP) server designed to interface with Proxmox, including client examples.
+## Quick Start
 
-## Prerequisites
+```bash
+# Create external network
+docker network create gpu-ai-stack
 
-- Docker and Docker Compose installed on your system.
-- A machine with GPU support and the necessary drivers installed (e.g., NVIDIA drivers and CUDA).
-- Access to the GitLab container registry for pulling private images.
+# Create external volumes
+docker volume create ai-ollama
+docker volume create ai-open-webui
+docker volume create ai-searxng
+docker volume create ai-stable-diffusion-data
+docker volume create ai-stable-diffusion-output
+docker volume create ai-mongo-db
+docker volume create ai-mongo-configdb
+docker volume create ai-mongo-logs
+docker volume create ai-libretranslate-data
+docker volume create ai-libretranslate-cache
+docker volume create ai-whisper-uploads
+docker volume create ai-whisper-logs
+docker volume create ai-whisper-models
+docker volume create ai-redis-data
+docker volume create ai-agent-proxmox-logs
+docker volume create ai-mcp-proxmox
 
-## Setup
+# Configure environment
+cp .env.example .env
+# Edit .env with your settings
 
-1. Clone this repository:
-   ```bash
-   git clone https://gitlab.com/your-repo/gpu-ai-stack.git
-   cd gpu-ai-stack
-   ```
+# Start services
+docker-compose up -d
+```
 
-2. Ensure your environment variables are set correctly. Create a `.env` file in the root directory with the following variables:
-   ```env
-   PUID=1000
-   PGID=1000
-   REDIS_PASSWORD=your_redis_password
-   DB_USER=your_db_user
-   DB_PASS=your_db_password
-   PROXMOX_HOST=your_proxmox_host
-   PROXMOX_USER=your_proxmox_user
-   PROXMOX_PASSWORD=your_proxmox_password
-   ```
+## Configuration
 
-3. Pull the required images:
-   ```bash
-   docker-compose pull
-   ```
+### Environment Variables
 
-4. Start the stack:
-   ```bash
-   docker-compose up -d
-   ```
+Create `.env` file from `.env.example`:
 
-## Usage
+```bash
+# User/Group IDs for file permissions
+PUID=1000
+PGID=1000
 
-- Access the services via their respective ports:
-  - Ollama: `http://localhost:11434`
-  - Open-WebUI: `http://localhost:8080`
-  - SearxNG: `http://localhost:8081`
-  - Stable Diffusion WebUI: `http://localhost:7860`
-  - MongoDB: `mongodb://localhost:27017`
-  - LibreTranslate: `http://localhost:5000`
-  - Whisper: `http://localhost:8000`
-  - Redis: `redis://localhost:16379`
-  - Agent-Proxmox: `http://localhost:8501`
-  - MCP-Proxmox: `http://localhost:8008`
+# Database credentials
+DB_USER=whisper
+DB_PASS=your_secure_password
 
-- Logs and data are stored in the respective volumes defined in the `docker-compose.yml` file.
+# Redis authentication
+REDIS_PASSWORD=your_redis_password
 
-## Volumes and Networks
+# Whisper service configuration
+WHISHPER_HOST=https://whisper.local
+WHISPER_MODELS=tiny,small
 
-### Volumes
+# Proxmox integration
+PROXMOX_HOST=your.proxmox.host
+PROXMOX_USER=your_username
+PROXMOX_PASSWORD=your_password
+PROXMOX_VERIFY_SSL=false
 
-The stack uses the following external volumes:
+# Agent configuration
+LANGCHAIN_LOG_DIR=/logs/langchain
+SESSION_ID=default
+```
 
-- `ai-ollama`
-- `ai-open-webui`
-- `ai-searxng`
-- `ai-stable-diffusion-data`
-- `ai-stable-diffusion-output`
-- `ai-mongo-db`
-- `ai-mongo-configdb`
-- `ai-mongo-logs`
-- `ai-libretranslate-data`
-- `ai-libretranslate-cache`
-- `ai-whisper-uploads`
-- `ai-whisper-logs`
-- `ai-whisper-models`
-- `ai-redis-data`
-- `ai-agent-proxmox-logs`
-- `ai-mcp-proxmox`
+### Port Mappings
 
-### Networks
+- **8888**: Open-WebUI (primary interface)
+- **11434**: Ollama API
+- **7860**: Stable Diffusion WebUI
+- **8081**: SearxNG search
+- **8000**: Whisper transcription
+- **5000**: LibreTranslate API
+- **8501**: Proxmox agent
+- **8008**: MCP server
+- **27017**: MongoDB
+- **16379**: Redis
 
-The stack uses the following networks:
+## Service Dependencies
 
-- `gpu-ai-stack` (external)
-- `default`
+```
+ollama (base LLM service)
+├── open-webui (web interface)
+│   └── searxng (web search)
+└── agent-proxmox
+    └── ai-redis
 
-## Contributing
+mongo
+├── translate (LibreTranslate)
+└── whisper (speech-to-text)
 
-Contributions are welcome! Please open an issue or submit a merge request for any improvements or bug fixes.
+stable-diffusion-download → stable-diffusion-webui
+```
 
-## License
+## Development
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+### Building Custom Images
+
+```bash
+# Build all local images
+docker-compose build
+
+# Build specific service
+docker-compose build stable-diffusion-webui
+
+# Force rebuild without cache
+docker-compose build --no-cache
+```
+
+### Logs and Debugging
+
+```bash
+# View all logs
+docker-compose logs -f
+
+# Service-specific logs
+docker-compose logs -f ollama
+docker-compose logs -f open-webui
+
+# Container inspection
+docker-compose ps
+docker-compose top
+```
+
+### Helper Scripts
+
+```bash
+# View Redis chat history
+cd helper-scripts
+python print_chat_history.py --session-id default
+
+# Create GitLab issues for development roadmap
+python create_gitlab_issues.py
+```
+
+## Data Persistence
+
+All data is stored in named Docker volumes with external lifecycle management:
+
+- **Models**: `ai-ollama`, `ai-whisper-models`, `ai-stable-diffusion-data`
+- **User Data**: `ai-open-webui`, `ai-mongo-db`
+- **Cache**: `ai-libretranslate-cache`, `ai-redis-data`
+- **Logs**: `ai-whisper-logs`, `ai-mongo-logs`, `ai-agent-proxmox-logs`
+
+## Network Architecture
+
+- **gpu-ai-stack**: External network for service communication
+- **default**: Bridge network for internal container communication
+
+Services communicate via container names on the shared network.
